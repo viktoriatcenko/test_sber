@@ -2,6 +2,8 @@ package model;
 
 import java.util.List;
 
+import javax.xml.bind.annotation.XmlElement;
+
 public class Result {
     private List<Person> resultPeople;
 
@@ -16,6 +18,7 @@ public class Result {
         return resultPeople;
     }
 
+    @XmlElement(name = "Person")
     public void setResultPeople(List<Person> resultPeople) {
         this.resultPeople = resultPeople;
     }

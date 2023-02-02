@@ -2,7 +2,10 @@ package model;
 
 import java.util.List;
 
+import javax.xml.bind.annotation.XmlElement;
+
 public class Minimum {
+
 
     private List<Person> resultPeople;
 
@@ -17,6 +20,7 @@ public class Minimum {
         return resultPeople;
     }
 
+    @XmlElement(name = "Person")
     public void setResultPeople(List<Person> resultPeople) {
         this.resultPeople = resultPeople;
     }
