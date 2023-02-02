@@ -37,24 +37,21 @@ public class Test {
             });
             System.out.println();
 
-//            List<Person> sortedPeople = people.stream()
-//                .sorted(Comparator.comparingDouble(Person::getAppendFromBank))
-//                .limit(3)
-//                .collect(Collectors.toList());
+            List<Person> sortedPeople = people.stream()
+                .sorted(Comparator.comparing(Person::getAppendFromBank))
+                .limit(3)
+                .collect(Collectors.toList());
 
-
-
-
-            Result result = new Result();
-            Minimum minimum = new Minimum();
-            Total total = new Total();
+            Result result = new Result(people);
+            Minimum minimum = new Minimum(sortedPeople);
+            Total total = new Total(result, minimum);
 
             jaxbContext = JAXBContext.newInstance(Bank.class);
             Marshaller jaxbMarshaller = jaxbContext.createMarshaller();
             jaxbMarshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, Boolean.TRUE);
             File file = new File("src/main/resources/result.xml");
 
-            jaxbMarshaller.marshal(bank, file);
+            jaxbMarshaller.marshal(total, file);
 
         } catch (JAXBException | FileNotFoundException e) {
             throw new RuntimeException(e);
