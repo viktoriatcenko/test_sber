@@ -26,8 +26,11 @@ public class Test {
                     .map(Person::getWallet)
                     .reduce(BigDecimal.ZERO, BigDecimal::add);
             BigDecimal allMoney = peopleMoney.add(bank.getWallet());
-            people.forEach(x -> x.setAppendFromBank((allMoney.divide(BigDecimal.valueOf(people.size()), 2, RoundingMode.UP))
-                .subtract(x.getWallet())));
+            people.forEach(x -> {
+                BigDecimal fe = allMoney.divide(BigDecimal.valueOf(people.size()), 2, RoundingMode.UP);
+                x.setAppendFromBank(fe.subtract(x.getWallet()));
+                x.setWallet(fe.add(x.getWallet()));
+            });
             System.out.println();
         } catch (JAXBException | FileNotFoundException e) {
             throw new RuntimeException(e);
