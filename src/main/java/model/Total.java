@@ -1,6 +1,7 @@
 package model;
 
 import javax.xml.bind.annotation.XmlAttribute;
+import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlRootElement;
 
 @XmlRootElement(name = "total")
@@ -22,7 +23,7 @@ public class Total {
         return result;
     }
 
-    @XmlAttribute(name = "result")
+    @XmlElement(name = "result")
     public void setResult(Result result) {
         this.result = result;
     }
@@ -31,7 +32,7 @@ public class Total {
         return minimum;
     }
 
-    @XmlAttribute(name = "minimum")
+    @XmlElement(name = "minimum")
     public void setMinimum(Minimum minimum) {
         this.minimum = minimum;
     }
