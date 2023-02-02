@@ -43,13 +43,13 @@ public class Main {
             Double bankWallet = Double.parseDouble(rootNode.getAttributeValue("wallet"));
             List<Element> list = rootNode.getChildren("Person");
             List<Person> people = new ArrayList<>();
-            list.forEach(x -> people.add(new Person(x.getAttributeValue("name"),
-                    Double.parseDouble(x.getAttributeValue("wallet")), null)));
-            Double allMoney = bankWallet + people.stream()
-                    .map(Person::getWallet)
-                    .reduce((double) 0, Double::sum);
-            people.forEach(x -> x.setAppendFromBank(round(allMoney / people.size()) - x.getWallet()));
-            writeXml(System.out, people);
+//            list.forEach(x -> people.add(new Person(x.getAttributeValue("name"),
+//                    Double.parseDouble(x.getAttributeValue("wallet")), null)));
+//            Double allMoney = bankWallet + people.stream()
+//                    .map(Person::getWallet)
+//                    .reduce((double) 0, Double::sum);
+//            people.forEach(x -> x.setAppendFromBank(round(allMoney / people.size()) - x.getWallet()));
+//            writeXml(System.out, people);
 
         } catch (JDOMException | IOException e) {
             throw new RuntimeException(e);
@@ -78,16 +78,16 @@ public class Main {
         result.addContent(totalList);
 
         Element minimum = new Element("minimum");
-        List<Person> sortedPeople = people.stream()
-            .sorted(Comparator.comparingDouble(Person::getAppendFromBank))
-            .limit(3)
-            .collect(Collectors.toList());
+//        List<Person> sortedPeople = people.stream()
+//            .sorted(Comparator.comparingDouble(Person::getAppendFromBank))
+//            .limit(3)
+//            .collect(Collectors.toList());
 
-        List<Element> minimumList = new ArrayList<>();
-            for (Person x: sortedPeople) {
-                minimumList.add(new Element("Person").setAttribute("name", x.getName()));
-            }
-        minimum.addContent(minimumList);
+//        List<Element> minimumList = new ArrayList<>();
+//            for (Person x: sortedPeople) {
+//                minimumList.add(new Element("Person").setAttribute("name", x.getName()));
+//            }
+//        minimum.addContent(minimumList);
 
         total.addContent(result);
         total.addContent(minimum);
