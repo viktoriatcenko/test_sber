@@ -13,7 +13,7 @@ import lombok.*;
 public class Person {
     private String name;
     private BigDecimal wallet;
-    private BigDecimal appendFromBank;
+    private BigDecimal appendFromBank = BigDecimal.ZERO;
 
     public Person() {
     }
@@ -43,5 +43,10 @@ public class Person {
     @XmlAttribute(name = "appendFromBank")
     public void setAppendFromBank(BigDecimal appendFromBank) {
         this.appendFromBank = appendFromBank;
+    }
+
+    public void addMoneyFromBank(BigDecimal money) {
+        this.wallet = this.wallet.add(money);
+        this.appendFromBank = this.appendFromBank.add(money);
     }
 }

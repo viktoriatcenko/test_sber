@@ -1,105 +1,138 @@
-import model.Bank;
-import model.Person;
 
-import org.jdom2.Attribute;
-import org.jdom2.CDATA;
-import org.jdom2.Comment;
-import org.jdom2.Document;
-import org.jdom2.Element;
-import org.jdom2.JDOMException;
-import org.jdom2.input.SAXBuilder;
-import org.jdom2.output.Format;
-import org.jdom2.output.XMLOutputter;
-
-import javax.xml.XMLConstants;
 import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.util.ArrayList;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.math.BigDecimal;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import javax.xml.bind.JAXBContext;
+import javax.xml.bind.JAXBException;
+import javax.xml.bind.Marshaller;
+import javax.xml.bind.Unmarshaller;
+
+import model.*;
+
+import static java.math.BigDecimal.ZERO;
+import static java.math.BigDecimal.valueOf;
+
 public class Main {
-
-    private static final String FILENAME = "src/main/resources/test.xml";
-    private static final String RESULT = "src/main/resources/result.xml";
-
-
+    private static JAXBContext jaxbContext;
+    private static Bank bank;
     public static void main(String[] args) {
-        parse();
+            List<Person> people = parseXML();
+            count(people, getMoney(people));
+            writeXML(people);
     }
 
-    public static void parse()  {
+
+
+    /**
+     * Метод рассчитывает сумму из Bank по всем Person в списке
+     * @param people - список всех Person
+     * @param moneyFromBank - деньги, которые пришли из Bank
+     */
+    public static void count(List<Person> people, BigDecimal moneyFromBank) {
+         BigDecimal max = people.stream()
+                 .max(Comparator.comparing(Person::getWallet))
+                 .get().getWallet();
+        BigDecimal delta = people.stream()
+                .map(Person::getWallet)
+                .reduce(ZERO, (x, y) -> x.add(max.subtract(y)));
+
+        if (delta.compareTo(moneyFromBank) > 0) {
+            List<Person> filteredList =  people.stream()
+                    .filter(p -> !p.getWallet().equals(max))
+                    .collect(Collectors.toList());
+            count(filteredList, moneyFromBank);
+        } else {
+            separatePeople(people, max);
+            moneyFromBank = moneyFromBank.subtract(delta);
+            divideMoney(people, moneyFromBank);
+        }
+    }
+
+    /**
+     * Метод распределяет все деньги, которые были получены из Bank
+     * @param people - список всех Person
+     * @param money - деньги, которые пришли из Bank
+     */
+    public static void divideMoney(List<Person> people, BigDecimal money) {
+        double ps = (double) people.size() / 100;
+        BigDecimal ost = money.remainder(valueOf(ps));
+        BigDecimal ceiling = money.subtract(ost).divide(BigDecimal.valueOf(people.size()));
+        double dCeiling = (ps * 100);
+        double part = ps / dCeiling;
+        people.forEach(p -> p.addMoneyFromBank(ceiling));
+        people.stream()
+                .limit(ost.multiply(valueOf(100)).longValue())
+                .forEach(p -> p.addMoneyFromBank(BigDecimal.valueOf(part)));
+    }
+
+    /**
+     * Вспомогательный метод, который распределяет деньги, пришедшие из дельты между максимальным кол-вом
+     * денег владельца из списка и остальными
+     * @param people- список всех Person
+     * @param delta - деньги, которые пришли из дельты
+     */
+    public static void separatePeople(List<Person> people, BigDecimal delta) {
+        people.forEach(person -> person.addMoneyFromBank(delta.subtract(person.getWallet())));
+    }
+
+
+    /**
+     * Метод парсит XML файлы и возвращает лист POJO-объектов
+     * @return
+     */
+    public static List<Person> parseXML() {
         try {
-            SAXBuilder sax = new SAXBuilder();
-            sax.setProperty(XMLConstants.ACCESS_EXTERNAL_DTD, "");
-            sax.setProperty(XMLConstants.ACCESS_EXTERNAL_SCHEMA, "");
-
-            Document doc = sax.build(new File(FILENAME));
-
-            Element rootNode = doc.getRootElement();
-            Double bankWallet = Double.parseDouble(rootNode.getAttributeValue("wallet"));
-            List<Element> list = rootNode.getChildren("Person");
-            List<Person> people = new ArrayList<>();
-//            list.forEach(x -> people.add(new Person(x.getAttributeValue("name"),
-//                    Double.parseDouble(x.getAttributeValue("wallet")), null)));
-//            Double allMoney = bankWallet + people.stream()
-//                    .map(Person::getWallet)
-//                    .reduce((double) 0, Double::sum);
-//            people.forEach(x -> x.setAppendFromBank(round(allMoney / people.size()) - x.getWallet()));
-//            writeXml(System.out, people);
-
-        } catch (JDOMException | IOException e) {
+            jaxbContext = JAXBContext.newInstance(Bank.class);
+            Unmarshaller jaxbUnmarshaller = jaxbContext.createUnmarshaller();
+            bank = (Bank) jaxbUnmarshaller.unmarshal(new FileReader("src/main/resources/test.xml"));
+        } catch (JAXBException | FileNotFoundException e) {
             throw new RuntimeException(e);
         }
-
+        return bank.getPeople();
     }
 
-    public static Double round(Double d) {
-        return (double) (Math.round(d * 100) / 100);
+    /**
+     * Вспомогательный метод, возвращающий общее кол-во денег
+     * @return
+     */
+    public static BigDecimal getMoney(List<Person> people) {
+        BigDecimal peopleMoney = people.stream()
+                .map(Person::getWallet)
+                .reduce(ZERO, BigDecimal::add);
+        return peopleMoney.add(bank.getWallet());
     }
 
-    private static void writeXml(OutputStream output, List<Person> people) throws IOException {
+    /**
+     * Метод записывает итоговый XML файл с всеми сущностями
+     */
+    public static void writeXML(List<Person> people) {
+        BigDecimal min = people.stream()
+                .map(Person::getWallet)
+                .min(Comparator.comparing(BigDecimal::doubleValue)).get();
+        List<ResultPerson> sortedPeople = people.stream()
+                .filter(p -> p.getWallet().equals(min))
+                .map(ResultPerson::new)
+                .collect(Collectors.toList());
 
-        Document doc = new Document();
-        Element total = new Element("total");
-        doc.setRootElement(total);
+        Result result = new Result(people);
+        Minimum minimum = new Minimum(sortedPeople);
+        Total total = new Total(result, minimum);
 
-        Element result = new Element("result");
-
-        List<Element> totalList = new ArrayList<>();
-        for (Person x: people) {
-            totalList.add(new Element("Person").setAttribute("name", x.getName())
-                .setAttribute("wallet", String.valueOf(x.getWallet()))
-                .setAttribute("appendFromBank", String.valueOf(x.getAppendFromBank())));
+        try {
+            jaxbContext = JAXBContext.newInstance(Total.class);
+            Marshaller jaxbMarshaller = jaxbContext.createMarshaller();
+            jaxbMarshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, Boolean.TRUE);
+            File file = new File("src/main/resources/result.xml");
+            jaxbMarshaller.marshal(total, file);
+        } catch (JAXBException e) {
+            throw new RuntimeException(e);
         }
-        result.addContent(totalList);
-
-        Element minimum = new Element("minimum");
-//        List<Person> sortedPeople = people.stream()
-//            .sorted(Comparator.comparingDouble(Person::getAppendFromBank))
-//            .limit(3)
-//            .collect(Collectors.toList());
-
-//        List<Element> minimumList = new ArrayList<>();
-//            for (Person x: sortedPeople) {
-//                minimumList.add(new Element("Person").setAttribute("name", x.getName()));
-//            }
-//        minimum.addContent(minimumList);
-
-        total.addContent(result);
-        total.addContent(minimum);
-
-        XMLOutputter xmlOutputter = new XMLOutputter();
-
-        xmlOutputter.setFormat(Format.getPrettyFormat());
-        xmlOutputter.output(doc, output);
-
-//        try(FileOutputStream fileOutputStream =
-//                new FileOutputStream(RESULT)){
-//            xmlOutputter.output(doc, fileOutputStream);
-//        }
     }
+
+
 }
