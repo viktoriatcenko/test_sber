@@ -22,7 +22,7 @@ public class Main {
     private static Bank bank;
     public static void main(String[] args) {
             List<Person> people = parseXML();
-            count(people, getMoney(people));
+            count(people, bank.getWallet());
             writeXML(people);
     }
 
@@ -37,10 +37,13 @@ public class Main {
          BigDecimal max = people.stream()
                  .max(Comparator.comparing(Person::getWallet))
                  .get().getWallet();
-        BigDecimal delta = people.stream()
+
+        // сумма, необходимая, чтобы уравнять всех по максимальному значению денег (max)
+         BigDecimal delta = people.stream()
                 .map(Person::getWallet)
                 .reduce(ZERO, (x, y) -> x.add(max.subtract(y)));
 
+        // delta больше чем деньги из банка
         if (delta.compareTo(moneyFromBank) > 0) {
             List<Person> filteredList =  people.stream()
                     .filter(p -> !p.getWallet().equals(max))
